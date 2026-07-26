@@ -217,6 +217,107 @@ final class CompatibilityController
         ]);
     }
 
+    public function publicInstrumentPage(Request $request): void
+    {
+        $id = $this->routeId($request);
+        $instrument = $this->findInstrument($id);
+        $maintenance = $this->linkedRows(
+            'SELECT id, instrument_id, date, type, description, technician, next_due_date
+             FROM maintenance_records
+             WHERE instrument_id = :id
+             ORDER BY date DESC NULLS LAST, id DESC
+             LIMIT 5',
+            $id
+        );
+        $serviceReports = $this->linkedRows(
+            'SELECT id, instrument_id, date, summary, technician
+             FROM service_reports
+             WHERE instrument_id = :id
+             ORDER BY date DESC NULLS LAST, id DESC
+             LIMIT 5',
+            $id
+        );
+
+        $rows = [
+            'Model' => $instrument['model'] ?? null,
+            'Serial' => $instrument['serial_number'] ?? null,
+            'Manufacturer' => $instrument['manufacturer'] ?? null,
+            'Location' => $instrument['location'] ?? null,
+            'Status' => $instrument['status'] ?? null,
+            'Purchase Date' => $instrument['purchase_date'] ?? null,
+        ];
+
+        $details = '';
+        foreach ($rows as $label => $value) {
+            $details .= '<div><span>' . $this->html($label) . '</span><strong>' . $this->html($this->display($value)) . '</strong></div>';
+        }
+
+        $maintenanceItems = $this->listItems(
+            $maintenance,
+            static fn (array $row): string => trim(($row['date'] ?? 'Not set') . ' - ' . ($row['type'] ?? 'Maintenance'))
+        );
+        $reportItems = $this->listItems(
+            $serviceReports,
+            static fn (array $row): string => trim(($row['date'] ?? 'Not set') . ' - ' . ($row['technician'] ?? 'Service report'))
+        );
+
+        $frontendUrl = rtrim(Config::string('FRONTEND_URL', ''), '/');
+        $frontendLink = $frontendUrl === ''
+            ? ''
+            : '<a class="button" href="' . $this->html($frontendUrl . '/equipment') . '">Open dashboard</a>';
+
+        $html = '<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>' . $this->html($instrument['name'] ?? 'Equipment Profile') . '</title>
+  <style>
+    :root { color-scheme: dark; font-family: Arial, sans-serif; }
+    * { box-sizing: border-box; }
+    body { background: #0b0612; color: #fbf8ff; margin: 0; padding: 18px; }
+    main { display: grid; gap: 14px; margin: 0 auto; max-width: 760px; }
+    section { background: #161021; border: 1px solid #3f2858; border-radius: 8px; padding: 16px; }
+    p { color: #c9bfdc; margin: 0; }
+    h1, h2 { margin: 0; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 18px; }
+    .eyebrow { color: #c084fc; font-size: 12px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; }
+    .details { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+    .details div, li { border: 1px solid #3f2858; border-radius: 8px; padding: 10px; }
+    span { color: #c9bfdc; display: block; font-size: 12px; margin-bottom: 4px; }
+    strong { color: #fbf8ff; }
+    ul { display: grid; gap: 8px; list-style: none; margin: 10px 0 0; padding: 0; }
+    .button { align-items: center; background: #a855f7; border-radius: 8px; color: #fff; display: inline-flex; font-weight: 800; margin-top: 4px; min-height: 40px; padding: 9px 12px; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <p class="eyebrow">Science Spark Equipment</p>
+      <h1>' . $this->html($instrument['name'] ?? 'Equipment Profile') . '</h1>
+      <p>Read-only QR profile</p>
+    </section>
+    <section>
+      <h2>Details</h2>
+      <div class="details">' . $details . '</div>
+    </section>
+    <section>
+      <h2>Recent Maintenance</h2>
+      <ul>' . $maintenanceItems . '</ul>
+    </section>
+    <section>
+      <h2>Recent Service Reports</h2>
+      <ul>' . $reportItems . '</ul>
+    </section>
+    <section>' . $frontendLink . '</section>
+  </main>
+</body>
+</html>';
+
+        Response::raw($html, 'text/html; charset=utf-8');
+    }
+
     public function qrCode(Request $request): void
     {
         $id = $this->routeId($request);
@@ -377,9 +478,36 @@ final class CompatibilityController
 
     private function instrumentUrl(int $id): string
     {
-        $frontendUrl = rtrim(Config::string('FRONTEND_URL', 'http://127.0.0.1:5173'), '/');
+        $appUrl = rtrim(Config::string('APP_URL', 'http://127.0.0.1:8080'), '/');
 
-        return $frontendUrl . '/dashboard?instrument=' . $id;
+        return $appUrl . '/scan/equipment/' . $id;
+    }
+
+    private function html(mixed $value): string
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    private function display(mixed $value): string
+    {
+        return $value === null || $value === '' ? 'Not set' : (string) $value;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     */
+    private function listItems(array $rows, callable $label): string
+    {
+        if ($rows === []) {
+            return '<li><span>No records found</span><strong>Nothing to show yet</strong></li>';
+        }
+
+        $items = '';
+        foreach ($rows as $row) {
+            $items .= '<li><strong>' . $this->html($label($row)) . '</strong></li>';
+        }
+
+        return $items;
     }
 
     private function dataUriContent(string $dataUri): string
