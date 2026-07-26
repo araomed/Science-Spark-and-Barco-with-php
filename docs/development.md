@@ -4,7 +4,7 @@
 
 ```bash
 composer install
-php -S 127.0.0.1:8080 -t public
+php -S 127.0.0.1:8080 -t public public/index.php
 ```
 
 ## Quality Checks
@@ -27,7 +27,7 @@ Required local values:
 - `DB_PASSWORD`
 - `JWT_SECRET`
 
-Frontend values such as `FRONTEND_URL` and `CORS_ALLOWED_ORIGINS` are not secrets.
+`APP_URL` should match the URL used to open the PHP app. It is also used for generated QR targets.
 
 ## Database Safety
 

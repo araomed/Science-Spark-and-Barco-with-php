@@ -13,7 +13,7 @@ final class HealthController
 {
     public function root(Request $request): void
     {
-        $frontendUrl = Config::string('FRONTEND_URL', '');
+        $frontendUrl = Config::string('APP_URL', '');
 
         if ($frontendUrl !== '' && !headers_sent()) {
             http_response_code(302);
@@ -52,7 +52,7 @@ final class HealthController
         Response::success([
             'base_url' => '/api',
             'health' => '/api/health',
-            'frontend' => Config::string('FRONTEND_URL', 'http://127.0.0.1:5173'),
+            'web' => Config::string('APP_URL', 'http://127.0.0.1:8080'),
             'authentication' => [
                 'login' => 'POST /api/auth/login',
                 'me' => 'GET /api/auth/me',

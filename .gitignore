@@ -7,8 +7,3 @@
 /storage/uploads/*
 !/storage/uploads/.gitkeep
 !/storage/logs/.gitkeep
-/frontend/.env
-/frontend/.env.*
-!/frontend/.env.example
-/frontend/node_modules/
-/frontend/dist/

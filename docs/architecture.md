@@ -11,7 +11,7 @@ This project intentionally uses plain PHP instead of a framework.
 5. The router matches method/path, extracts route parameters, runs middleware, and calls a controller.
 6. Controllers validate input and call repositories or small services.
 7. Repositories execute PDO prepared statements against PostgreSQL.
-8. `Response` sends consistent JSON.
+8. `Response` sends either rendered HTML, raw files, or consistent JSON for `/api` routes.
 
 ## Error Handling
 
@@ -19,11 +19,13 @@ This project intentionally uses plain PHP instead of a framework.
 
 ## Authentication
 
-Login verifies the existing bcrypt password hashes in `users.hashed_password`. JWTs are signed with `JWT_SECRET` and include subject, issue time, expiry, and a small public user payload. Protected routes require `Authorization: Bearer <token>`.
+Web login verifies the existing bcrypt password hashes in `users.hashed_password` and stores the public user data in a PHP session.
+
+API login still returns JWTs for JSON clients. Protected API routes require `Authorization: Bearer <token>`.
 
 ## Authorization
 
-Role middleware enforces backend permissions for `admin`, `manager`, and `technician`. Frontend route protection should be treated only as a convenience layer.
+Role middleware enforces API permissions for `admin`, `manager`, and `technician`. The server-rendered PHP web pages require a PHP session.
 
 ## Uploads
 
@@ -31,4 +33,4 @@ Uploaded documents are detected with `fileinfo`, checked against an env-controll
 
 ## QR Codes
 
-New equipment records automatically receive a unique QR target based on their created instrument ID. The frontend only exposes QR viewing; it does not show manual generate or download controls.
+New equipment records automatically receive a unique QR target based on their created instrument ID. QR codes open a PHP-rendered public read-only scan page at `/scan/equipment/{id}`.

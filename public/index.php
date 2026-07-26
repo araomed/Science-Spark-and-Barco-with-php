@@ -13,9 +13,23 @@ use Dotenv\Dotenv;
 require_once __DIR__ . '/../vendor/autoload.php';
 
 $projectRoot = dirname(__DIR__);
+$publicRoot = __DIR__;
+
+if (
+    PHP_SAPI === 'cli-server'
+    && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET'
+    && isset($_SERVER['REQUEST_URI'])
+    && is_file($publicRoot . parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH))
+) {
+    return false;
+}
 
 $dotenv = Dotenv::createImmutable($projectRoot);
 $dotenv->safeLoad();
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 
 $requestId = $_SERVER['HTTP_X_REQUEST_ID'] ?? bin2hex(random_bytes(8));
 $_SERVER['HTTP_X_REQUEST_ID'] = $requestId;

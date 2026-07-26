@@ -1,16 +1,24 @@
-# Science Spark Laboratory PHP API
+# Science Spark Laboratory Management System
 
-Plain PHP 8.5 JSON API for the Science Spark laboratory equipment database.
+Native PHP 8.5 and HTML5 laboratory equipment management system for the Science Spark database.
+
+This project does not use Laravel, React, Vite, Python, or FastAPI. PHP renders the web pages directly and also keeps JSON API endpoints available under `/api`.
 
 ## Architecture
 
-React frontend, when available, should call:
-
 ```text
-React -> HTTP JSON -> public/index.php -> Router -> Controller -> Repository -> PDO -> PostgreSQL
+Browser -> public/index.php -> Router -> Controller -> PDO -> PostgreSQL
 ```
 
-This repository currently contains the PHP API only. The existing Python/FastAPI source and React frontend source were not present in this folder during the audit, so exact endpoint compatibility must be confirmed when those projects are provided.
+Main folders:
+
+- `public/` contains the web entry point and CSS assets.
+- `routes/` defines PHP web routes and API routes.
+- `src/Controllers/` contains page and API controllers.
+- `src/Database/` contains the PDO database connection.
+- `src/Auth/` contains JWT support for API clients.
+- `storage/` contains logs and uploaded files.
+- `docs/` contains project documentation.
 
 ## Requirements
 
@@ -20,7 +28,7 @@ This repository currently contains the PHP API only. The existing Python/FastAPI
 
 ## Setup
 
-1. Install dependencies:
+1. Install PHP dependencies:
 
    ```bash
    composer install
@@ -35,69 +43,67 @@ This repository currently contains the PHP API only. The existing Python/FastAPI
    JWT_SECRET=generate-a-long-random-secret
    ```
 
-3. Start the API:
+3. Start the PHP app:
 
    ```bash
-   php -S 127.0.0.1:8080 -t public
+   php -S 127.0.0.1:8080 -t public public/index.php
    ```
 
-4. Check health:
+4. Open:
 
-   ```bash
-   curl http://127.0.0.1:8080/api/health
+   ```text
+   http://127.0.0.1:8080
    ```
+
+For phone testing on the same Wi-Fi, set `APP_URL` in `.env` to the laptop IP, for example:
+
+```env
+APP_URL=http://192.168.1.206:8080
+```
+
+Then start PHP on all network interfaces:
+
+```bash
+php -S 0.0.0.0:8080 -t public public/index.php
+```
+
+## Features
+
+- PHP session login/logout
+- Dashboard metrics
+- Equipment management
+- Customer management
+- Maintenance records
+- Maintenance alerts
+- Notifications
+- Service reports
+- Service requests
+- Documents
+- CSV exports
+- Activity log view
+- Profile and settings pages
+- Automatic equipment QR codes
+- Public read-only QR scan profile pages
+- JSON API endpoints under `/api`
 
 ## Commands
 
 - `composer lint` checks PHP syntax.
-- `composer test` runs focused unit tests for request parsing, validation, routing, and JWT handling.
-- `php -S 127.0.0.1:8080 -t public` starts the local API.
-
-## API Shape
-
-Responses use:
-
-```json
-{
-  "success": true,
-  "data": {},
-  "meta": {}
-}
-```
-
-Errors use:
-
-```json
-{
-  "success": false,
-  "message": "Human readable error",
-  "errors": {}
-}
-```
-
-Implemented route documentation is in [docs/api.md](docs/api.md).
-
-## Authentication
-
-`POST /api/auth/login` verifies the existing `users.hashed_password` bcrypt hashes with `password_verify()` and returns a signed JWT. Protected routes require:
-
-```text
-Authorization: Bearer <token>
-```
-
-Roles currently found in the database are `admin`, `manager`, and `technician`.
-
-## Uploads
-
-Document uploads are stored under `storage/uploads`. File type is detected server-side with `fileinfo`, upload size is limited by `MAX_UPLOAD_SIZE`, and allowed MIME types come from `ALLOWED_UPLOAD_MIME_TYPES`.
+- `composer test` runs focused unit tests.
+- `php -S 127.0.0.1:8080 -t public public/index.php` starts the local app.
 
 ## QR Codes
 
-Equipment QR targets are assigned automatically when equipment is created. The frontend shows a view-only QR preview from `GET /api/instruments/{id}/qrcode`; manual generate/download controls are not part of the UI.
+Equipment QR targets are assigned automatically when equipment is created. QR codes open:
+
+```text
+/scan/equipment/{id}
+```
+
+That page is rendered by PHP and does not require the React/Vite frontend or a phone login session.
 
 ## Documentation
 
-- [docs/audit.md](docs/audit.md)
 - [docs/api.md](docs/api.md)
 - [docs/database.md](docs/database.md)
 - [docs/architecture.md](docs/architecture.md)

@@ -244,7 +244,7 @@ final class CompatibilityController
             static fn (array $row): string => trim(($row['date'] ?? 'Not set') . ' - ' . ($row['technician'] ?? 'Service report'))
         );
 
-        $frontendUrl = rtrim(Config::string('FRONTEND_URL', ''), '/');
+        $frontendUrl = rtrim(Config::string('APP_URL', ''), '/');
         $frontendLink = $frontendUrl === ''
             ? ''
             : '<a class="button" href="' . $this->html($frontendUrl . '/equipment') . '">Open dashboard</a>';
@@ -461,7 +461,7 @@ final class CompatibilityController
 
     private function instrumentUrl(int $id): string
     {
-        $frontendUrl = rtrim(Config::string('FRONTEND_URL', 'http://127.0.0.1:5173'), '/');
+        $frontendUrl = rtrim(Config::string('APP_URL', 'http://127.0.0.1:8080'), '/');
 
         return $frontendUrl . '/scan/equipment/' . $id;
     }

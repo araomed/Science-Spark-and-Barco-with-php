@@ -88,9 +88,7 @@ Exact Python API compatibility could not be mapped because the Python/FastAPI so
 
 ## D. Frontend Analysis
 
-No React source was present in this folder, so pages, components, route protection, API client behavior, forms, validation, loading states, error states, responsiveness, accessibility, and bundle performance could not be inspected.
-
-The PHP API now exposes routes that a React frontend can call, but frontend integration remains blocked until the frontend source is added to this folder or provided separately.
+The earlier React/Vite frontend has been removed. The project now includes a native PHP and HTML5 web interface rendered by `WebController`, while JSON API routes remain available under `/api`.
 
 ## E. Implementation Plan
 
@@ -113,9 +111,9 @@ Phase 4, core modules:
 
 - Add REST endpoints for users, customers, categories, instruments/equipment, maintenance, service reports, service requests, documents, notifications, activity logs, QR metadata, and dashboard.
 
-Phase 5, frontend integration:
+Phase 5, web interface:
 
-- Blocked until React source is available.
+- Completed as native PHP and HTML5 pages.
 
 Phase 6, testing and optimisation:
 
