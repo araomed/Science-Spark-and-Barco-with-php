@@ -323,7 +323,8 @@ option {
   padding: 6px 10px;
 }
 
-.notification-top-button {
+.notification-top-button,
+.profile-top-button {
   align-items: center;
   background: #10091a;
   border: 1px solid var(--line-strong);
@@ -339,7 +340,8 @@ option {
     transform 160ms ease;
 }
 
-.notification-top-button:hover {
+.notification-top-button:hover,
+.profile-top-button:hover {
   border-color: #e9d5ff;
   box-shadow: 0 0 0 1px var(--outline-glow);
   transform: scale(1.04);
@@ -362,6 +364,46 @@ option {
   justify-content: center;
   min-width: 22px;
   padding: 0 7px;
+}
+
+.profile-top-button {
+  border-radius: 8px;
+  gap: 10px;
+  padding: 6px 9px;
+  text-align: left;
+}
+
+.account-mini-avatar {
+  align-items: center;
+  background: linear-gradient(135deg, #a855f7, #4c1d95);
+  border: 1px solid #c084fc;
+  border-radius: 6px;
+  color: #ffffff;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 900;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.top-profile-meta {
+  display: grid;
+  gap: 1px;
+}
+
+.top-profile-meta strong {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.top-profile-meta small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.1;
+  text-transform: capitalize;
 }
 
 .user-menu > div {
@@ -434,6 +476,7 @@ option {
 .form-grid,
 .toolbar-form,
 .alert-item,
+.settings-panel,
 .profile-grid div,
 .drawer-list {
   transition:
@@ -452,6 +495,7 @@ option {
 .form-grid:hover,
 .toolbar-form:hover,
 .alert-item:hover,
+.settings-panel:hover,
 .profile-grid div:hover,
 .drawer-list:hover {
   border-color: var(--line-strong);
@@ -779,6 +823,48 @@ tbody tr:hover {
   text-align: right;
 }
 
+.settings-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-panel {
+  align-content: start;
+}
+
+.settings-list {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-list p {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  padding-top: 10px;
+}
+
+.settings-list span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.settings-list strong {
+  color: var(--ink);
+  text-align: right;
+}
+
+.settings-action-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .drawer-backdrop {
   background: rgba(7, 3, 13, 0.72);
   inset: 0;
@@ -962,6 +1048,7 @@ tbody tr:hover {
   .toolbar-form,
   .edit-form,
   .account-profile-grid,
+  .settings-grid,
   .profile-grid {
     grid-template-columns: 1fr;
   }

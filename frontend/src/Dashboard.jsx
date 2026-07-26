@@ -6,8 +6,6 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: "D", path: "/dashboard" },
-  { id: "notifications", label: "Notifications", icon: "N", path: "/notifications" },
-  { id: "profile", label: "Profile", icon: "P", path: "/profile" },
   { id: "equipment", label: "Equipment", icon: "E", path: "/equipment" },
   { id: "customers", label: "Customers", icon: "C", path: "/customers" },
   { id: "maintenance", label: "Maintenance", icon: "M", path: "/maintenance" },
@@ -17,11 +15,18 @@ const navItems = [
   { id: "documents", label: "Documents", icon: "F", path: "/documents" },
   { id: "exports", label: "Reports", icon: "X", path: "/reports" },
   { id: "activity", label: "Activity", icon: "L", path: "/activity" },
+  { id: "settings", label: "Settings", icon: "S", path: "/settings" },
+];
+
+const sectionRoutes = [
+  ...navItems,
+  { id: "notifications", label: "Notifications", path: "/notifications" },
+  { id: "profile", label: "Profile", path: "/profile" },
 ];
 
 function sectionFromPath(pathname) {
   const normalized = pathname === "/" ? "/dashboard" : pathname.replace(/\/$/, "");
-  return navItems.find((item) => item.path === normalized)?.id || "dashboard";
+  return sectionRoutes.find((item) => item.path === normalized)?.id || "dashboard";
 }
 
 const emptyData = {
@@ -201,7 +206,7 @@ function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const activeSection = sectionFromPath(location.pathname);
-  const activeNavItem = navItems.find((item) => item.id === activeSection) || navItems[0];
+  const activeNavItem = sectionRoutes.find((item) => item.id === activeSection) || navItems[0];
   const [data, setData] = useState(emptyData);
   const [forms, setForms] = useState(getInitialForms);
   const [documentFile, setDocumentFile] = useState(null);
@@ -274,7 +279,7 @@ function Dashboard() {
 
   useEffect(() => {
     const normalized = location.pathname === "/" ? "/dashboard" : location.pathname.replace(/\/$/, "");
-    if (!navItems.some((item) => item.path === normalized)) {
+    if (!sectionRoutes.some((item) => item.path === normalized)) {
       navigate("/dashboard", { replace: true });
       return;
     }
@@ -315,6 +320,8 @@ function Dashboard() {
     () => data.notifications.filter((notification) => !notification.is_read).length,
     [data.notifications],
   );
+  const accountName = user?.username || "Signed in";
+  const accountInitials = accountName.slice(0, 2).toUpperCase();
 
   const updateForm = (formName, field, value) => {
     setForms((current) => ({
@@ -1196,8 +1203,6 @@ function Dashboard() {
   );
 
   const renderUserProfile = () => {
-    const username = user?.username || "Signed in";
-    const initials = username.slice(0, 2).toUpperCase();
     const summary = data.summary;
 
     return (
@@ -1205,10 +1210,10 @@ function Dashboard() {
         <SectionHeader eyebrow="Account" title="Profile" />
         <div className="account-profile-grid">
           <section className="panel account-hero">
-            <div className="account-avatar" aria-hidden="true">{initials}</div>
+            <div className="account-avatar" aria-hidden="true">{accountInitials}</div>
             <div>
               <p className="eyebrow">Signed in as</p>
-              <h2>{username}</h2>
+              <h2>{accountName}</h2>
               <p>{display(user?.email)}</p>
             </div>
           </section>
@@ -1231,6 +1236,73 @@ function Dashboard() {
     );
   };
 
+  const renderSettings = () => (
+    <section className="content-section">
+      <SectionHeader eyebrow="Preferences" title="Settings" />
+      <div className="settings-grid">
+        <section className="panel settings-panel">
+          <div>
+            <p className="eyebrow">Account</p>
+            <h3>Profile and Session</h3>
+          </div>
+          <div className="settings-list">
+            <p><span>Username</span><strong>{accountName}</strong></p>
+            <p><span>Role</span><strong>{display(user?.role)}</strong></p>
+            <p><span>Email</span><strong>{display(user?.email)}</strong></p>
+          </div>
+          <div className="settings-action-row">
+            <button className="ghost-action" onClick={() => navigate("/profile")} type="button">View Profile</button>
+            <button className="danger-action" onClick={logout} type="button">Sign out</button>
+          </div>
+        </section>
+
+        <section className="panel settings-panel">
+          <div>
+            <p className="eyebrow">Notifications</p>
+            <h3>Alerts and Reminders</h3>
+          </div>
+          <div className="settings-list">
+            <p><span>Unread</span><strong>{unreadNotificationCount}</strong></p>
+            <p><span>Reminder Source</span><strong>Maintenance schedule</strong></p>
+          </div>
+          <div className="settings-action-row">
+            <button className="ghost-action" onClick={() => navigate("/notifications")} type="button">Open Notifications</button>
+            <button className="ghost-action" disabled={submitting === "notifications-read-all"} onClick={markAllNotificationsRead} type="button">
+              Mark All Read
+            </button>
+          </div>
+        </section>
+
+        <section className="panel settings-panel">
+          <div>
+            <p className="eyebrow">Workspace</p>
+            <h3>Display and Data</h3>
+          </div>
+          <div className="settings-list">
+            <p><span>Theme</span><strong>Purple Night</strong></p>
+            <p><span>Sidebar</span><strong>Compact</strong></p>
+            <p><span>Equipment</span><strong>{data.instruments.length}</strong></p>
+          </div>
+          <div className="settings-action-row">
+            <button className="ghost-action" onClick={loadAll} type="button">Refresh Data</button>
+          </div>
+        </section>
+
+        <section className="panel settings-panel">
+          <div>
+            <p className="eyebrow">System</p>
+            <h3>Connection</h3>
+          </div>
+          <div className="settings-list">
+            <p><span>Backend</span><strong>PHP API</strong></p>
+            <p><span>Session</span><strong>Active</strong></p>
+            <p><span>Frontend</span><strong>Vite React</strong></p>
+          </div>
+        </section>
+      </div>
+    </section>
+  );
+
   const sectionMap = {
     dashboard: renderDashboard,
     profile: renderUserProfile,
@@ -1244,6 +1316,7 @@ function Dashboard() {
     documents: renderDocuments,
     exports: renderExports,
     activity: renderActivity,
+    settings: renderSettings,
   };
 
   const logout = () => {
@@ -1288,14 +1361,13 @@ function Dashboard() {
               <span>Notifications</span>
               <strong>{unreadNotificationCount}</strong>
             </button>
-            <span className="api-pill" title="This frontend is connected to the PHP backend on port 8080">
-              PHP API
-            </span>
-            <div>
-              <strong>{user?.username || "Signed in"}</strong>
-              <span>{user?.role || "user"}</span>
-            </div>
-            <button className="ghost-action" onClick={logout}>Sign out</button>
+            <button className="profile-top-button" onClick={() => navigate("/profile")} type="button">
+              <span className="account-mini-avatar" aria-hidden="true">{accountInitials}</span>
+              <span className="top-profile-meta">
+                <strong>{accountName}</strong>
+                <small>{user?.role || "user"}</small>
+              </span>
+            </button>
           </div>
         </header>
 
