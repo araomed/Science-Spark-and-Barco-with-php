@@ -37,6 +37,7 @@ $userRepository = new UserRepository($pdo);
 $authController = new AuthController($userRepository, $jwt);
 $compatibility = new CompatibilityController($pdo);
 $router->get('/scan/equipment/{id}', [$compatibility, 'publicInstrumentPage']);
+$router->get('/api/public/instruments/{id}/profile', [$compatibility, 'publicInstrumentProfile']);
 $router->post('/api/auth/login', [$authController, 'login']);
 $router->post('/api/login', [$authController, 'login']);
 $router->post('/api/auth/logout', [$authController, 'logout'], [$auth]);

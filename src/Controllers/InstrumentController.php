@@ -71,10 +71,10 @@ final class InstrumentController extends ResourceController
 
     private function targetUrl(int $instrumentId): string
     {
-        $appUrl = rtrim(Config::string('APP_URL', ''), '/');
+        $frontendUrl = rtrim(Config::string('FRONTEND_URL', ''), '/');
 
-        return $appUrl === ''
+        return $frontendUrl === ''
             ? '/scan/equipment/' . $instrumentId
-            : $appUrl . '/scan/equipment/' . $instrumentId;
+            : $frontendUrl . '/scan/equipment/' . $instrumentId;
     }
 }

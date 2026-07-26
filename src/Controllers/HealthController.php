@@ -13,6 +13,14 @@ final class HealthController
 {
     public function root(Request $request): void
     {
+        $frontendUrl = Config::string('FRONTEND_URL', '');
+
+        if ($frontendUrl !== '' && !headers_sent()) {
+            http_response_code(302);
+            header('Location: ' . $frontendUrl);
+            return;
+        }
+
         Response::success([
             'name' => 'Science Spark PHP API',
             'backend' => 'PHP',

@@ -189,32 +189,15 @@ final class CompatibilityController
     public function instrumentProfile(Request $request): void
     {
         $id = $this->routeId($request);
-        $instrument = $this->findInstrument($id);
 
-        Response::success([
-            'instrument' => $instrument,
-            'maintenance_records' => $this->linkedRows(
-                'SELECT id, instrument_id, date, type, description, technician, next_due_date
-                 FROM maintenance_records
-                 WHERE instrument_id = :id
-                 ORDER BY date DESC NULLS LAST, id DESC',
-                $id
-            ),
-            'service_reports' => $this->linkedRows(
-                'SELECT id, instrument_id, date, report_file_path, summary, technician
-                 FROM service_reports
-                 WHERE instrument_id = :id
-                 ORDER BY date DESC NULLS LAST, id DESC',
-                $id
-            ),
-            'documents' => $this->linkedRows(
-                'SELECT id, title, category, file_path, instrument_id, uploaded_by, upload_date, description
-                 FROM documents
-                 WHERE instrument_id = :id
-                 ORDER BY upload_date DESC NULLS LAST, id DESC',
-                $id
-            ),
-        ]);
+        Response::success($this->instrumentProfileData($id));
+    }
+
+    public function publicInstrumentProfile(Request $request): void
+    {
+        $id = $this->routeId($request);
+
+        Response::success($this->instrumentProfileData($id, 5));
     }
 
     public function publicInstrumentPage(Request $request): void
@@ -478,9 +461,9 @@ final class CompatibilityController
 
     private function instrumentUrl(int $id): string
     {
-        $appUrl = rtrim(Config::string('APP_URL', 'http://127.0.0.1:8080'), '/');
+        $frontendUrl = rtrim(Config::string('FRONTEND_URL', 'http://127.0.0.1:5173'), '/');
 
-        return $appUrl . '/scan/equipment/' . $id;
+        return $frontendUrl . '/scan/equipment/' . $id;
     }
 
     private function html(mixed $value): string
@@ -491,6 +474,40 @@ final class CompatibilityController
     private function display(mixed $value): string
     {
         return $value === null || $value === '' ? 'Not set' : (string) $value;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function instrumentProfileData(int $id, ?int $limit = null): array
+    {
+        $instrument = $this->findInstrument($id);
+        $limitSql = $limit === null ? '' : ' LIMIT ' . max(1, $limit);
+
+        return [
+            'instrument' => $instrument,
+            'maintenance_records' => $this->linkedRows(
+                'SELECT id, instrument_id, date, type, description, technician, next_due_date
+                 FROM maintenance_records
+                 WHERE instrument_id = :id
+                 ORDER BY date DESC NULLS LAST, id DESC' . $limitSql,
+                $id
+            ),
+            'service_reports' => $this->linkedRows(
+                'SELECT id, instrument_id, date, report_file_path, summary, technician
+                 FROM service_reports
+                 WHERE instrument_id = :id
+                 ORDER BY date DESC NULLS LAST, id DESC' . $limitSql,
+                $id
+            ),
+            'documents' => $this->linkedRows(
+                'SELECT id, title, category, file_path, instrument_id, uploaded_by, upload_date, description
+                 FROM documents
+                 WHERE instrument_id = :id
+                 ORDER BY upload_date DESC NULLS LAST, id DESC' . $limitSql,
+                $id
+            ),
+        ];
     }
 
     /**
