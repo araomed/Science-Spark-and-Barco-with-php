@@ -25,7 +25,7 @@ function PublicEquipmentProfile() {
     setError("");
     setProfile(null);
 
-    api.get(`/public/instruments/${id}/profile`)
+    api.get(`/public/instruments/${id}/profile`, { timeout: 12000 })
       .then((response) => {
         if (isCurrent) {
           setProfile(response.data);
@@ -33,7 +33,7 @@ function PublicEquipmentProfile() {
       })
       .catch(() => {
         if (isCurrent) {
-          setError("This equipment profile could not be opened.");
+          setError("This equipment profile could not be opened. Refresh the page or check the laptop firewall.");
         }
       });
 
