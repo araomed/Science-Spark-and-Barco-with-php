@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Config\Config;
 use App\Database\Database;
 use App\Http\Request;
 use App\Http\Response;
@@ -43,7 +44,7 @@ final class HealthController
         Response::success([
             'base_url' => '/api',
             'health' => '/api/health',
-            'frontend' => 'http://127.0.0.1:5173',
+            'frontend' => Config::string('FRONTEND_URL', 'http://127.0.0.1:5173'),
             'authentication' => [
                 'login' => 'POST /api/auth/login',
                 'me' => 'GET /api/auth/me',
