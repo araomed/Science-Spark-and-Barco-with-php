@@ -1,22 +1,28 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import api from "./api";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
 const navItems = [
-  { id: "dashboard", label: "Dashboard", icon: "D" },
-  { id: "equipment", label: "Equipment", icon: "E" },
-  { id: "customers", label: "Customers", icon: "C" },
-  { id: "maintenance", label: "Maintenance", icon: "M" },
-  { id: "alerts", label: "Alerts", icon: "A" },
-  { id: "notifications", label: "Notifications", icon: "N" },
-  { id: "serviceReports", label: "Service Reports", icon: "R" },
-  { id: "serviceRequests", label: "Service Requests", icon: "Q" },
-  { id: "documents", label: "Documents", icon: "F" },
-  { id: "exports", label: "Reports", icon: "X" },
-  { id: "activity", label: "Activity", icon: "L" },
+  { id: "dashboard", label: "Dashboard", icon: "D", path: "/dashboard" },
+  { id: "notifications", label: "Notifications", icon: "N", path: "/notifications" },
+  { id: "profile", label: "Profile", icon: "P", path: "/profile" },
+  { id: "equipment", label: "Equipment", icon: "E", path: "/equipment" },
+  { id: "customers", label: "Customers", icon: "C", path: "/customers" },
+  { id: "maintenance", label: "Maintenance", icon: "M", path: "/maintenance" },
+  { id: "alerts", label: "Alerts", icon: "A", path: "/alerts" },
+  { id: "serviceReports", label: "Service Reports", icon: "R", path: "/service-reports" },
+  { id: "serviceRequests", label: "Service Requests", icon: "Q", path: "/service-requests" },
+  { id: "documents", label: "Documents", icon: "F", path: "/documents" },
+  { id: "exports", label: "Reports", icon: "X", path: "/reports" },
+  { id: "activity", label: "Activity", icon: "L", path: "/activity" },
 ];
+
+function sectionFromPath(pathname) {
+  const normalized = pathname === "/" ? "/dashboard" : pathname.replace(/\/$/, "");
+  return navItems.find((item) => item.path === normalized)?.id || "dashboard";
+}
 
 const emptyData = {
   summary: null,
@@ -193,7 +199,9 @@ function DataTable({ columns, rows, getKey, emptyTitle }) {
 
 function Dashboard() {
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState("dashboard");
+  const location = useLocation();
+  const activeSection = sectionFromPath(location.pathname);
+  const activeNavItem = navItems.find((item) => item.id === activeSection) || navItems[0];
   const [data, setData] = useState(emptyData);
   const [forms, setForms] = useState(getInitialForms);
   const [documentFile, setDocumentFile] = useState(null);
@@ -265,6 +273,17 @@ function Dashboard() {
   }, [loadAll]);
 
   useEffect(() => {
+    const normalized = location.pathname === "/" ? "/dashboard" : location.pathname.replace(/\/$/, "");
+    if (!navItems.some((item) => item.path === normalized)) {
+      navigate("/dashboard", { replace: true });
+      return;
+    }
+    if (normalized !== location.pathname) {
+      navigate(normalized, { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  useEffect(() => {
     return () => {
       if (qrPreview?.url) {
         window.URL.revokeObjectURL(qrPreview.url);
@@ -291,6 +310,11 @@ function Dashboard() {
         .some((value) => String(value).toLowerCase().includes(term)),
     );
   }, [data.instruments, equipmentFilter]);
+
+  const unreadNotificationCount = useMemo(
+    () => data.notifications.filter((notification) => !notification.is_read).length,
+    [data.notifications],
+  );
 
   const updateForm = (formName, field, value) => {
     setForms((current) => ({
@@ -1171,8 +1195,45 @@ function Dashboard() {
     </section>
   );
 
+  const renderUserProfile = () => {
+    const username = user?.username || "Signed in";
+    const initials = username.slice(0, 2).toUpperCase();
+    const summary = data.summary;
+
+    return (
+      <section className="content-section">
+        <SectionHeader eyebrow="Account" title="Profile" />
+        <div className="account-profile-grid">
+          <section className="panel account-hero">
+            <div className="account-avatar" aria-hidden="true">{initials}</div>
+            <div>
+              <p className="eyebrow">Signed in as</p>
+              <h2>{username}</h2>
+              <p>{display(user?.email)}</p>
+            </div>
+          </section>
+
+          <section className="panel account-detail-list">
+            <h3>Account Details</h3>
+            <p><span>Role</span><strong>{display(user?.role)}</strong></p>
+            <p><span>User ID</span><strong>{display(user?.id)}</strong></p>
+            <p><span>Backend</span><strong>PHP API</strong></p>
+          </section>
+
+          <section className="panel account-detail-list">
+            <h3>Workspace Snapshot</h3>
+            <p><span>Equipment</span><strong>{summary?.total_instruments ?? data.instruments.length}</strong></p>
+            <p><span>Customers</span><strong>{summary?.total_customers ?? data.customers.length}</strong></p>
+            <p><span>Unread Notifications</span><strong>{unreadNotificationCount}</strong></p>
+          </section>
+        </div>
+      </section>
+    );
+  };
+
   const sectionMap = {
     dashboard: renderDashboard,
+    profile: renderUserProfile,
     equipment: renderEquipment,
     customers: renderCustomers,
     maintenance: renderMaintenance,
@@ -1206,7 +1267,7 @@ function Dashboard() {
             <button
               className={activeSection === item.id ? "nav-item active" : "nav-item"}
               key={item.id}
-              onClick={() => setActiveSection(item.id)}
+              onClick={() => navigate(item.path)}
               type="button"
             >
               <span aria-hidden="true">{item.icon}</span>
@@ -1220,9 +1281,13 @@ function Dashboard() {
         <header className="topbar">
           <div>
             <p className="eyebrow">Workspace</p>
-            <h1>{navItems.find((item) => item.id === activeSection)?.label || "Dashboard"}</h1>
+            <h1>{activeNavItem.label}</h1>
           </div>
           <div className="user-menu">
+            <button className="notification-top-button" onClick={() => navigate("/notifications")} type="button">
+              <span>Notifications</span>
+              <strong>{unreadNotificationCount}</strong>
+            </button>
             <span className="api-pill" title="This frontend is connected to the PHP backend on port 8080">
               PHP API
             </span>
