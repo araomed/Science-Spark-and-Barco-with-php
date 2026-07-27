@@ -180,7 +180,7 @@ final class WebController
                     $row['customer_name'] ?? 'Unassigned',
                     $row['location'],
                     $this->statusChip($row['status']),
-                    '<a class="icon-action" href="/equipment/' . (int) $row['id'] . '/qrcode" target="_blank">View QR</a>',
+                    '<button class="icon-action qr-action" type="button" data-qr-src="/equipment/' . (int) $row['id'] . '/qrcode" data-equipment-name="' . $this->e($row['name']) . '" data-profile-url="/equipment/' . (int) $row['id'] . '">View QR</button>',
                     '<div class="row-actions"><a class="icon-action" href="/equipment/' . (int) $row['id'] . '">Profile</a>' . $this->deleteForm('/equipment/' . (int) $row['id'] . '/delete') . '</div>',
                 ], $rows),
                 true
@@ -251,9 +251,12 @@ final class WebController
 
     public function equipmentQr(Request $request): void
     {
-        $this->requireUser();
         $id = $this->routeId($request);
-        $this->rowOrFail('SELECT id FROM instruments WHERE id = :id', ['id' => $id]);
+        if ($this->row('SELECT id FROM instruments WHERE id = :id', ['id' => $id]) === null) {
+            Response::raw($this->missingQrSvg(), 'image/svg+xml', 404);
+            return;
+        }
+
         $svg = $this->dataUriContent((new QRCode())->render($this->scanUrl($id)));
         Response::raw($svg, 'image/svg+xml');
     }
@@ -731,8 +734,27 @@ final class WebController
                     </div>
                 </header>' . $body . '
             </main>
+            ' . $this->qrModal() . '
         </div>';
         $this->htmlPage($title, $shell);
+    }
+
+    private function qrModal(): string
+    {
+        return '<div class="qr-backdrop" data-qr-modal hidden>
+            <section class="qr-modal" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title">
+                <div class="qr-modal-header">
+                    <div><p class="eyebrow">Equipment QR</p><h2 id="qr-modal-title">QR Code</h2></div>
+                    <button class="icon-action qr-close" type="button" data-qr-close aria-label="Close QR code">Close</button>
+                </div>
+                <div class="qr-frame"><img data-qr-image alt="Equipment QR code"></div>
+                <p class="qr-modal-hint">Scan this code to open the read-only equipment profile.</p>
+                <div class="row-actions">
+                    <a class="primary-action" data-qr-profile href="/equipment">View Profile</a>
+                    <button class="ghost-action" type="button" data-qr-close>Done</button>
+                </div>
+            </section>
+        </div>';
     }
 
     private function htmlPage(string $title, string $body): void
@@ -745,8 +767,51 @@ final class WebController
   <title>' . $this->e($title) . ' - Science Spark</title>
   <link rel="stylesheet" href="/assets/app.css">
 </head>
-<body>' . $body . '</body>
+<body>' . $body . $this->appScript() . '</body>
 </html>', 'text/html; charset=utf-8');
+    }
+
+    private function appScript(): string
+    {
+        return '<script>
+(() => {
+  const modal = document.querySelector("[data-qr-modal]");
+  if (!modal) return;
+
+  const image = modal.querySelector("[data-qr-image]");
+  const title = modal.querySelector("#qr-modal-title");
+  const profile = modal.querySelector("[data-qr-profile]");
+  let lastTrigger = null;
+
+  const closeModal = () => {
+    modal.hidden = true;
+    image.removeAttribute("src");
+    if (lastTrigger) lastTrigger.focus();
+  };
+
+  document.addEventListener("click", (event) => {
+    const trigger = event.target.closest(".qr-action");
+    if (trigger) {
+      lastTrigger = trigger;
+      title.textContent = trigger.dataset.equipmentName || "QR Code";
+      image.src = trigger.dataset.qrSrc || "";
+      profile.href = trigger.dataset.profileUrl || "/equipment";
+      modal.hidden = false;
+      return;
+    }
+
+    if (event.target.matches("[data-qr-close]") || event.target === modal) {
+      closeModal();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !modal.hidden) {
+      closeModal();
+    }
+  });
+})();
+</script>';
     }
 
     private function currentUser(): ?array
@@ -803,6 +868,7 @@ final class WebController
                 $cellString = (string) $cell;
                 $isTrustedHtmlCell = str_starts_with($cellString, '<a class="icon-action"')
                     || str_starts_with($cellString, '<a class="ghost-action"')
+                    || str_starts_with($cellString, '<button class="icon-action')
                     || str_starts_with($cellString, '<form method="post"')
                     || str_starts_with($cellString, '<span class="status-chip')
                     || str_starts_with($cellString, '<div class="row-actions"');
@@ -1008,6 +1074,11 @@ final class WebController
     {
         $parts = explode(',', $dataUri, 2);
         return count($parts) === 2 ? (base64_decode($parts[1], true) ?: $dataUri) : $dataUri;
+    }
+
+    private function missingQrSvg(): string
+    {
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240"><rect width="240" height="240" fill="#ffffff"/><text x="120" y="116" font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#111111">QR not found</text><text x="120" y="142" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#555555">Equipment record missing</text></svg>';
     }
 
     private function e(mixed $value): string
