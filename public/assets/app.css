@@ -407,6 +407,14 @@ h2 {
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
+.public-detail-grid div,
+.profile-grid div {
+  align-content: start;
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
 .metric-card,
 .panel,
 .table-shell,
@@ -476,6 +484,12 @@ h2 {
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
+}
+
+.public-detail-grid strong,
+.profile-grid strong {
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
 .metric-card strong {
@@ -752,6 +766,11 @@ tbody tr:hover {
   justify-items: start;
 }
 
+.qr-inline span {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
 .qr-inline img {
   background: #fff;
   border-radius: 8px;
@@ -812,6 +831,7 @@ tbody tr:hover {
   padding: 18px;
 }
 
+.qr-frame svg,
 .qr-frame img {
   display: block;
   height: min(62vw, 260px);
@@ -820,9 +840,15 @@ tbody tr:hover {
   width: min(62vw, 260px);
 }
 
+.qr-loading,
+.qr-error,
 .qr-modal-hint {
   color: var(--muted);
   font-size: 13px;
+}
+
+.qr-error {
+  color: var(--rose);
 }
 
 .public-scan-shell {

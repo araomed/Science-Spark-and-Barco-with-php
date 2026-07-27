@@ -747,7 +747,7 @@ final class WebController
                     <div><p class="eyebrow">Equipment QR</p><h2 id="qr-modal-title">QR Code</h2></div>
                     <button class="icon-action qr-close" type="button" data-qr-close aria-label="Close QR code">Close</button>
                 </div>
-                <div class="qr-frame"><img data-qr-image alt="Equipment QR code"></div>
+                <div class="qr-frame" data-qr-frame><p class="qr-loading">Loading QR...</p></div>
                 <p class="qr-modal-hint">Scan this code to open the read-only equipment profile.</p>
                 <div class="row-actions">
                     <a class="primary-action" data-qr-profile href="/equipment">View Profile</a>
@@ -759,13 +759,15 @@ final class WebController
 
     private function htmlPage(string $title, string $body): void
     {
+        $cssVersion = (string) (@filemtime(dirname(__DIR__, 2) . '/public/assets/app.css') ?: time());
+
         Response::raw('<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>' . $this->e($title) . ' - Science Spark</title>
-  <link rel="stylesheet" href="/assets/app.css">
+  <link rel="stylesheet" href="/assets/app.css?v=' . $this->e($cssVersion) . '">
 </head>
 <body>' . $body . $this->appScript() . '</body>
 </html>', 'text/html; charset=utf-8');
@@ -778,14 +780,14 @@ final class WebController
   const modal = document.querySelector("[data-qr-modal]");
   if (!modal) return;
 
-  const image = modal.querySelector("[data-qr-image]");
+  const frame = modal.querySelector("[data-qr-frame]");
   const title = modal.querySelector("#qr-modal-title");
   const profile = modal.querySelector("[data-qr-profile]");
   let lastTrigger = null;
 
   const closeModal = () => {
     modal.hidden = true;
-    image.removeAttribute("src");
+    frame.innerHTML = "<p class=\"qr-loading\">Loading QR...</p>";
     if (lastTrigger) lastTrigger.focus();
   };
 
@@ -793,10 +795,32 @@ final class WebController
     const trigger = event.target.closest(".qr-action");
     if (trigger) {
       lastTrigger = trigger;
+      const qrSrc = trigger.dataset.qrSrc || "";
       title.textContent = trigger.dataset.equipmentName || "QR Code";
-      image.src = trigger.dataset.qrSrc || "";
       profile.href = trigger.dataset.profileUrl || "/equipment";
+      frame.innerHTML = "<p class=\"qr-loading\">Loading QR...</p>";
       modal.hidden = false;
+
+      fetch(qrSrc, { credentials: "same-origin", cache: "no-store" })
+        .then((response) => {
+          if (!response.ok) throw new Error("QR request failed");
+          return response.text();
+        })
+        .then((svg) => {
+          const cleanSvg = svg.trim().replace(/^<\\?xml[^>]*>\\s*/i, "");
+          if (!cleanSvg.startsWith("<svg")) {
+            throw new Error("QR response was not SVG");
+          }
+          frame.innerHTML = cleanSvg;
+          const svgElement = frame.querySelector("svg");
+          if (svgElement) {
+            svgElement.setAttribute("role", "img");
+            svgElement.setAttribute("aria-label", "Equipment QR code");
+          }
+        })
+        .catch(() => {
+          frame.innerHTML = "<p class=\"qr-error\">QR code could not be loaded.</p>";
+        });
       return;
     }
 
