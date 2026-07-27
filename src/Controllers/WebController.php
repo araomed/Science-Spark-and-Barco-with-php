@@ -27,11 +27,17 @@ final class WebController
             return;
         }
 
-        $this->renderGuest('Sign in', '<form class="login-form" method="post" action="/login">
-            <div class="form-heading">
+        $this->renderGuest('Sign in', '<div class="brand-lockup">
+            <div class="brand-mark">SS</div>
+            <div>
                 <p class="eyebrow">Science Spark</p>
                 <h1>Laboratory Operations</h1>
-                <p>Clean PHP and HTML5 version.</p>
+            </div>
+        </div>
+        <form class="login-form" method="post" action="/login">
+            <div class="form-heading">
+                <h2>Sign in</h2>
+                <p>Access equipment, maintenance, service reports, and dashboards through native PHP.</p>
             </div>
             ' . $this->flashHtml() . '
             <label class="field"><span>Username or Email</span><input name="identifier" required autofocus></label>
@@ -78,13 +84,20 @@ final class WebController
     public function dashboard(Request $request): void
     {
         $this->requireUser();
+        $activeEquipment = $this->scalar("SELECT COUNT(*)::int FROM instruments WHERE status = 'active'");
         $summary = [
-            'Total Equipment' => $this->count('instruments'),
-            'Active Equipment' => $this->scalar("SELECT COUNT(*)::int FROM instruments WHERE status = 'active'"),
-            'Customers' => $this->count('customers'),
-            'Due Soon' => $this->scalar("SELECT COUNT(*)::int FROM maintenance_records WHERE next_due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days'"),
-            'Overdue' => $this->scalar('SELECT COUNT(*)::int FROM maintenance_records WHERE next_due_date IS NOT NULL AND next_due_date < CURRENT_DATE'),
+            'Total Equipment' => [$this->count('instruments'), $activeEquipment . ' active'],
+            'Customers' => [$this->count('customers'), 'Linked to inventory'],
+            'Due Soon' => [$this->scalar("SELECT COUNT(*)::int FROM maintenance_records WHERE next_due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days'"), 'Next 30 days'],
+            'Overdue' => [$this->scalar('SELECT COUNT(*)::int FROM maintenance_records WHERE next_due_date IS NOT NULL AND next_due_date < CURRENT_DATE'), 'Needs attention'],
+            'Reports This Month' => [$this->scalar("SELECT COUNT(*)::int FROM service_reports WHERE date >= DATE_TRUNC('month', CURRENT_DATE)"), 'Generated PDFs'],
         ];
+        $statusCounts = $this->rows(
+            "SELECT COALESCE(NULLIF(status, ''), 'unknown') AS status, COUNT(*)::int AS count
+             FROM instruments
+             GROUP BY COALESCE(NULLIF(status, ''), 'unknown')
+             ORDER BY count DESC, status"
+        );
         $recentReports = $this->rows(
             'SELECT sr.id, sr.date, sr.technician, sr.summary, i.name AS instrument_name
              FROM service_reports sr
@@ -103,22 +116,25 @@ final class WebController
         );
 
         $cards = '';
-        foreach ($summary as $label => $value) {
-            $cards .= '<article class="metric-card"><span>' . $this->e($label) . '</span><strong>' . $this->e($value) . '</strong></article>';
+        $accents = ['accent-mint', 'accent-blue', 'accent-amber', 'accent-rose', ''];
+        $index = 0;
+        foreach ($summary as $label => [$value, $hint]) {
+            $cards .= '<article class="metric-card ' . $accents[$index % count($accents)] . '"><span>' . $this->e($label) . '</span><strong>' . $this->e($value) . '</strong><small>' . $this->e($hint) . '</small></article>';
+            $index++;
         }
+        $attention = $this->maintenanceAttention($alerts);
 
         $body = '<section class="content-section">
-            <div class="section-header"><div><p class="eyebrow">Command center</p><h1>Dashboard</h1></div></div>
+            <div class="section-header"><div><p class="eyebrow">Command center</p><h1>Operations Dashboard</h1></div></div>
             ' . $this->flashHtml() . '
             <div class="metric-grid">' . $cards . '</div>
             <div class="dashboard-grid">
-                <section class="panel"><h2>Maintenance Attention</h2>' .
-                    $this->simpleList($alerts, static fn (array $row): string => ($row['instrument_name'] ?? 'Equipment') . ' - ' . ($row['type'] ?? 'maintenance') . ' due ' . ($row['next_due_date'] ?? 'not set')) .
-                '</section>
-                <section class="panel"><h2>Recent Service Reports</h2>' .
-                    $this->simpleList($recentReports, static fn (array $row): string => ($row['instrument_name'] ?? 'Equipment') . ' - ' . ($row['technician'] ?? 'Not set') . ' - ' . ($row['date'] ?? 'Not set')) .
-                '</section>
+                <section class="panel"><h2>Equipment Status</h2>' . $this->statusBars($statusCounts) . '</section>
+                <section class="panel"><h2>Maintenance Attention</h2>' . $attention . '</section>
             </div>
+            <section class="panel reports-panel"><h2>Recent Service Reports</h2>' .
+                $this->simpleList($recentReports, static fn (array $row): string => ($row['instrument_name'] ?? 'Equipment') . ' - ' . ($row['technician'] ?? 'Not set') . ' - ' . ($row['date'] ?? 'Not set')) .
+            '</section>
         </section>';
 
         $this->render('Dashboard', 'dashboard', $body);
@@ -163,7 +179,7 @@ final class WebController
                     $row['serial_number'],
                     $row['customer_name'] ?? 'Unassigned',
                     $row['location'],
-                    $row['status'],
+                    $this->statusChip($row['status']),
                     '<a class="icon-action" href="/equipment/' . (int) $row['id'] . '/qrcode" target="_blank">View QR</a>',
                     '<div class="row-actions"><a class="icon-action" href="/equipment/' . (int) $row['id'] . '">Profile</a>' . $this->deleteForm('/equipment/' . (int) $row['id'] . '/delete') . '</div>',
                 ], $rows),
@@ -221,7 +237,7 @@ final class WebController
                 ' . $this->detail('Manufacturer', $instrument['manufacturer']) . '
                 ' . $this->detail('Customer', $instrument['customer_name'] ?? 'Unassigned') . '
                 ' . $this->detail('Location', $instrument['location']) . '
-                ' . $this->detail('Status', $instrument['status']) . '
+                <div><span>Status</span>' . $this->statusChip($instrument['status']) . '</div>
             </div>
             <section class="panel"><h2>QR Code</h2><div class="qr-inline"><img alt="Equipment QR code" src="/equipment/' . $id . '/qrcode"><span>' . $this->e($this->scanUrl($id)) . '</span></div></section>
             <div class="dashboard-grid">
@@ -344,8 +360,8 @@ final class WebController
                 array_map(fn (array $row): array => [
                     $row['title'],
                     $row['message'],
-                    $row['severity'],
-                    ((bool) $row['is_read']) ? 'Yes' : 'No',
+                    $this->statusChip($row['severity']),
+                    $this->statusChip(((bool) $row['is_read']) ? 'read' : 'unread'),
                     $row['created_at'],
                     '<div class="row-actions"><form method="post" action="/notifications/' . (int) $row['id'] . '/read"><button class="icon-action" type="submit">Mark Read</button></form>' . $this->deleteForm('/notifications/' . (int) $row['id'] . '/delete') . '</div>',
                 ], $rows),
@@ -479,7 +495,7 @@ final class WebController
                 <button class="primary-action form-submit" type="submit">Open Request</button>
             </form>' .
             $this->table(['Equipment', 'Customer', 'Status', 'Technician', 'Created', 'Description', 'Actions'], array_map(fn (array $row): array => [
-                $row['instrument_name'], $row['customer_name'], $row['status'], $row['assigned_technician'], $row['created_date'], $row['description'], $this->deleteForm('/service-requests/' . (int) $row['id'] . '/delete'),
+                $row['instrument_name'], $row['customer_name'], $this->statusChip($row['status']), $row['assigned_technician'], $row['created_date'], $row['description'], $this->deleteForm('/service-requests/' . (int) $row['id'] . '/delete'),
             ], $rows), true) . '</section>';
         $this->render('Service Requests', 'serviceRequests', $body);
     }
@@ -785,14 +801,47 @@ final class WebController
             $html .= '<tr>';
             foreach ($row as $cell) {
                 $cellString = (string) $cell;
-                $isActionCell = str_starts_with($cellString, '<a ')
-                    || str_starts_with($cellString, '<form ')
+                $isTrustedHtmlCell = str_starts_with($cellString, '<a class="icon-action"')
+                    || str_starts_with($cellString, '<a class="ghost-action"')
+                    || str_starts_with($cellString, '<form method="post"')
+                    || str_starts_with($cellString, '<span class="status-chip')
                     || str_starts_with($cellString, '<div class="row-actions"');
-                $html .= '<td>' . ($htmlCells && $isActionCell ? $cellString : $this->e($cellString)) . '</td>';
+                $html .= '<td>' . ($htmlCells && $isTrustedHtmlCell ? $cellString : $this->e($cellString)) . '</td>';
             }
             $html .= '</tr>';
         }
         return $html . '</tbody></table></div>';
+    }
+
+    private function statusBars(array $rows): string
+    {
+        if ($rows === []) {
+            return '<div class="empty-state"><strong>No status data</strong><span>Equipment statuses will appear here.</span></div>';
+        }
+
+        $total = array_reduce($rows, static fn (int $sum, array $row): int => $sum + (int) $row['count'], 0);
+        $html = '<div class="status-bars">';
+        foreach ($rows as $row) {
+            $count = (int) $row['count'];
+            $width = $total > 0 ? max(4, (int) round(($count / $total) * 100)) : 0;
+            $html .= '<div class="status-bar-row"><div><span>' . $this->e($this->display($row['status'])) . '</span><strong>' . $this->e($count) . '</strong></div><div class="bar-track"><span style="width: ' . $width . '%"></span></div></div>';
+        }
+        return $html . '</div>';
+    }
+
+    private function maintenanceAttention(array $rows): string
+    {
+        if ($rows === []) {
+            return '<div class="empty-state"><strong>No active alerts</strong><span>Due and overdue maintenance will appear here.</span></div>';
+        }
+
+        $html = '<div class="alert-list">';
+        foreach ($rows as $row) {
+            $dueDate = $this->display($row['next_due_date'] ?? null);
+            $status = is_string($row['next_due_date'] ?? null) && $row['next_due_date'] < date('Y-m-d') ? 'overdue' : 'due soon';
+            $html .= '<div class="alert-item"><div><strong>' . $this->e($this->display($row['instrument_name'] ?? null)) . '</strong><span>' . $this->e($this->display($row['type'] ?? null)) . ' maintenance due ' . $this->e($dueDate) . '</span></div>' . $this->statusChip($status) . '</div>';
+        }
+        return $html . '</div>';
     }
 
     private function simpleList(array $rows, callable $label): string
@@ -843,6 +892,14 @@ final class WebController
     private function detailRow(string $label, mixed $value): string
     {
         return '<p><span>' . $this->e($label) . '</span><strong>' . $this->e($this->display($value)) . '</strong></p>';
+    }
+
+    private function statusChip(mixed $value): string
+    {
+        $label = $this->display($value);
+        $class = strtolower(str_replace([' ', '_'], '-', $label));
+
+        return '<span class="status-chip status-' . $this->e($class) . '">' . $this->e($label) . '</span>';
     }
 
     private function rows(string $sql, array $parameters = []): array
