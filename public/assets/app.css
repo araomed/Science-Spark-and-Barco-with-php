@@ -230,8 +230,7 @@ h2 {
 .topbar,
 .section-header,
 .user-menu,
-.row-actions,
-.settings-action-row {
+.row-actions {
   align-items: center;
   display: flex;
   gap: 12px;
@@ -244,8 +243,7 @@ h2 {
 }
 
 .user-menu,
-.row-actions,
-.settings-action-row {
+.row-actions {
   flex-wrap: wrap;
 }
 
@@ -424,7 +422,6 @@ h2 {
 .public-scan-hero,
 .public-scan-card,
 .public-detail-grid div,
-.public-list p,
 .profile-grid div {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -708,7 +705,6 @@ tbody tr:hover {
 
 .alert-list,
 .public-scan-shell,
-.public-list,
 .settings-list {
   display: grid;
   gap: 10px;
@@ -716,8 +712,7 @@ tbody tr:hover {
 
 .alert-item,
 .settings-list p,
-.account-detail-list p,
-.public-list p {
+.account-detail-list p {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px;
@@ -785,78 +780,6 @@ tbody tr:hover {
   max-width: 240px;
   padding: 14px;
   width: 100%;
-}
-
-.qr-backdrop {
-  align-items: center;
-  background: rgba(8, 14, 13, 0.76);
-  display: flex;
-  inset: 0;
-  justify-content: center;
-  padding: 20px;
-  position: fixed;
-  z-index: 40;
-}
-
-.qr-backdrop[hidden] {
-  display: none;
-}
-
-.qr-modal {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
-  display: grid;
-  gap: 16px;
-  max-width: 440px;
-  padding: 18px;
-  width: min(100%, 440px);
-}
-
-.qr-modal-header {
-  align-items: center;
-  display: flex;
-  gap: 14px;
-  justify-content: space-between;
-}
-
-.qr-frame {
-  align-items: center;
-  background:
-    linear-gradient(45deg, #f4f7f9 25%, transparent 25%),
-    linear-gradient(-45deg, #f4f7f9 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #f4f7f9 75%),
-    linear-gradient(-45deg, transparent 75%, #f4f7f9 75%);
-  background-color: #fff;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
-  background-size: 20px 20px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  display: flex;
-  justify-content: center;
-  min-height: 280px;
-  padding: 18px;
-}
-
-.qr-frame svg,
-.qr-frame img {
-  display: block;
-  height: min(62vw, 260px);
-  max-height: 260px;
-  max-width: 260px;
-  width: min(62vw, 260px);
-}
-
-.qr-loading,
-.qr-error,
-.qr-modal-hint {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.qr-error {
-  color: var(--rose);
 }
 
 .public-scan-shell {

@@ -193,11 +193,9 @@ function page_equipment(): never
          ORDER BY i.id DESC'
     );
     $customers = db_rows('SELECT id, name FROM customers ORDER BY name');
-    $tableRows = [];
-
-    foreach ($rows as $row) {
+    $tableRows = array_map(static function (array $row): array {
         $id = (int) $row['id'];
-        $tableRows[] = [
+        return [
             $row['name'],
             $row['model'],
             $row['serial_number'],
@@ -210,22 +208,20 @@ function page_equipment(): never
                 delete_form('/equipment/' . $id . '/delete'),
             ])),
         ];
-    }
+    }, $rows);
 
-    $form = '<form class="form-grid" method="post" action="/equipment">
-        ' . csrf_field() . '
-        ' . input_html('Name', 'name', true) . '
-        ' . input_html('Model', 'model') . '
-        ' . input_html('Serial Number', 'serial_number') . '
-        ' . input_html('Manufacturer', 'manufacturer') . '
-        ' . input_html('Location', 'location') . '
-        ' . select_html('Status', 'status', ['active' => 'Active', 'inactive' => 'Inactive', 'maintenance' => 'Maintenance', 'retired' => 'Retired'], 'active') . '
-        ' . input_html('Purchase Date', 'purchase_date', false, 'date') . '
-        ' . select_rows_html('Customer', 'customer_id', $customers, 'Unassigned') . '
-        <button class="primary-action form-submit" type="submit">Add Equipment</button>
-    </form>';
+    $form = form_html('/equipment', [
+        input_html('Name', 'name', true),
+        input_html('Model', 'model'),
+        input_html('Serial Number', 'serial_number'),
+        input_html('Manufacturer', 'manufacturer'),
+        input_html('Location', 'location'),
+        select_html('Status', 'status', ['active' => 'Active', 'inactive' => 'Inactive', 'maintenance' => 'Maintenance', 'retired' => 'Retired'], 'active'),
+        input_html('Purchase Date', 'purchase_date', false, 'date'),
+        select_rows_html('Customer', 'customer_id', $customers, 'Unassigned'),
+    ], 'Add Equipment');
 
-    render_app('Equipment', 'equipment', '<section class="content-section"><div class="section-header"><div><p class="eyebrow">Inventory</p><h1>Equipment</h1></div></div>' . flash_html() . $form . table_html(['Name', 'Model', 'Serial', 'Customer', 'Location', 'Status', 'Actions'], $tableRows) . '</section>');
+    render_app('Equipment', 'equipment', page_section('Inventory', 'Equipment', $form . table_html(['Name', 'Model', 'Serial', 'Customer', 'Location', 'Status', 'Actions'], $tableRows)));
 }
 
 function action_create_equipment(): never
@@ -274,9 +270,7 @@ function page_equipment_profile(int $id): never
         raw_cell('<a class="icon-action" href="/service-reports/' . (int) $row['id'] . '/pdf">PDF</a>'),
     ], $reports);
 
-    $body = '<section class="content-section">
-        <div class="section-header"><div><p class="eyebrow">Equipment Profile</p><h1>' . h($instrument['name']) . '</h1></div><a class="ghost-action" href="/equipment">Back</a></div>
-        <div class="profile-grid">
+    $body = page_section('Equipment Profile', (string) $instrument['name'], '<div class="profile-grid">
             ' . detail_html('Model', $instrument['model']) . '
             ' . detail_html('Serial', $instrument['serial_number']) . '
             ' . detail_html('Manufacturer', $instrument['manufacturer']) . '
@@ -288,8 +282,7 @@ function page_equipment_profile(int $id): never
         <div class="dashboard-grid">
             <section class="panel"><h2>Maintenance</h2>' . simple_list($maintenance, static fn (array $row): string => display($row['date']) . ' - ' . display($row['type']) . ' - ' . display($row['technician'])) . '</section>
             <section class="panel"><h2>Service Reports</h2>' . table_html(['Date', 'Technician', 'Summary', 'PDF'], $reportRows) . '</section>
-        </div>
-    </section>';
+        </div>', '<a class="ghost-action" href="/equipment">Back</a>', false);
 
     render_app('Equipment Profile', 'equipment', $body);
 }
@@ -328,10 +321,7 @@ function page_maintenance(): never
          LEFT JOIN instruments i ON i.id = mr.instrument_id
          ORDER BY mr.date DESC NULLS LAST, mr.id DESC'
     );
-    $tableRows = [];
-
-    foreach ($rows as $row) {
-        $tableRows[] = [
+    $tableRows = array_map(static fn (array $row): array => [
             $row['instrument_name'],
             $row['date'],
             $row['type'],
@@ -339,21 +329,18 @@ function page_maintenance(): never
             $row['next_due_date'],
             $row['description'],
             raw_cell(delete_form('/maintenance/' . (int) $row['id'] . '/delete')),
-        ];
-    }
+        ], $rows);
 
-    $form = '<form class="form-grid" method="post" action="/maintenance">
-        ' . csrf_field() . '
-        ' . select_rows_html('Equipment', 'instrument_id', $instruments, 'Select equipment', null, true) . '
-        ' . input_html('Date', 'date', false, 'date') . '
-        ' . select_html('Type', 'type', ['preventive' => 'Preventive', 'corrective' => 'Corrective', 'inspection' => 'Inspection', 'calibration' => 'Calibration']) . '
-        ' . input_html('Technician', 'technician') . '
-        ' . input_html('Next Due', 'next_due_date', false, 'date') . '
-        ' . textarea_html('Description', 'description') . '
-        <button class="primary-action form-submit" type="submit">Add Record</button>
-    </form>';
+    $form = form_html('/maintenance', [
+        select_rows_html('Equipment', 'instrument_id', $instruments, 'Select equipment', null, true),
+        input_html('Date', 'date', false, 'date'),
+        select_html('Type', 'type', ['preventive' => 'Preventive', 'corrective' => 'Corrective', 'inspection' => 'Inspection', 'calibration' => 'Calibration']),
+        input_html('Technician', 'technician'),
+        input_html('Next Due', 'next_due_date', false, 'date'),
+        textarea_html('Description', 'description'),
+    ], 'Add Record');
 
-    render_app('Maintenance', 'maintenance', '<section class="content-section"><div class="section-header"><div><p class="eyebrow">Scheduling</p><h1>Maintenance</h1></div></div>' . flash_html() . $form . table_html(['Equipment', 'Date', 'Type', 'Technician', 'Next Due', 'Description', 'Actions'], $tableRows) . '</section>');
+    render_app('Maintenance', 'maintenance', page_section('Scheduling', 'Maintenance', $form . table_html(['Equipment', 'Date', 'Type', 'Technician', 'Next Due', 'Description', 'Actions'], $tableRows)));
 }
 
 function action_create_maintenance(): never
@@ -381,36 +368,34 @@ function page_alerts(): never
         raw_cell(status_chip($row['alert_status'])),
     ], $rows);
 
-    render_app('Alerts', 'alerts', '<section class="content-section"><div class="section-header"><div><p class="eyebrow">Maintenance</p><h1>Alerts</h1></div></div>' . table_html(['Equipment', 'Type', 'Technician', 'Due Date', 'Status'], $tableRows) . '</section>');
+    render_app('Alerts', 'alerts', page_section('Maintenance', 'Alerts', table_html(['Equipment', 'Type', 'Technician', 'Due Date', 'Status'], $tableRows), '', false));
 }
 
 function page_notifications(): never
 {
     require_user();
     $rows = db_rows('SELECT id, title, message, category, severity, is_read, created_at FROM notifications ORDER BY created_at DESC, id DESC');
-    $tableRows = [];
-
-    foreach ($rows as $row) {
+    $tableRows = array_map(static function (array $row): array {
         $id = (int) $row['id'];
-        $tableRows[] = [
+        return [
             $row['title'],
             $row['message'],
             raw_cell(status_chip($row['severity'])),
             raw_cell(status_chip((bool) $row['is_read'] ? 'read' : 'unread')),
             $row['created_at'],
             raw_cell(row_actions([
-                '<form method="post" action="/notifications/' . $id . '/read">' . csrf_field() . '<button class="icon-action" type="submit">Mark Read</button></form>',
+                post_button_form('/notifications/' . $id . '/read', 'Mark Read', 'icon-action'),
                 delete_form('/notifications/' . $id . '/delete'),
             ])),
         ];
-    }
+    }, $rows);
 
     $actions = '<div class="row-actions">
-        <form method="post" action="/notifications/generate">' . csrf_field() . '<button class="primary-action" type="submit">Generate Reminders</button></form>
-        <form method="post" action="/notifications/read-all">' . csrf_field() . '<button class="ghost-action" type="submit">Mark All Read</button></form>
+        ' . post_button_form('/notifications/generate', 'Generate Reminders', 'primary-action') . '
+        ' . post_button_form('/notifications/read-all', 'Mark All Read') . '
     </div>';
 
-    render_app('Notifications', 'notifications', '<section class="content-section"><div class="section-header"><div><p class="eyebrow">Reminders</p><h1>Notifications</h1></div>' . $actions . '</div>' . flash_html() . table_html(['Title', 'Message', 'Severity', 'Read', 'Created', 'Actions'], $tableRows) . '</section>');
+    render_app('Notifications', 'notifications', page_section('Reminders', 'Notifications', table_html(['Title', 'Message', 'Severity', 'Read', 'Created', 'Actions'], $tableRows), $actions));
 }
 
 function action_generate_notifications(): never
@@ -465,11 +450,9 @@ function page_service_reports(): never
          LEFT JOIN instruments i ON i.id = sr.instrument_id
          ORDER BY sr.date DESC NULLS LAST, sr.id DESC'
     );
-    $tableRows = [];
-
-    foreach ($rows as $row) {
+    $tableRows = array_map(static function (array $row): array {
         $id = (int) $row['id'];
-        $tableRows[] = [
+        return [
             $row['instrument_name'],
             $row['date'],
             $row['technician'],
@@ -479,18 +462,16 @@ function page_service_reports(): never
                 delete_form('/service-reports/' . $id . '/delete'),
             ])),
         ];
-    }
+    }, $rows);
 
-    $form = '<form class="form-grid" method="post" action="/service-reports">
-        ' . csrf_field() . '
-        ' . select_rows_html('Equipment', 'instrument_id', $instruments, 'Select equipment', null, true) . '
-        ' . input_html('Date', 'date', false, 'date') . '
-        ' . input_html('Technician', 'technician') . '
-        ' . textarea_html('Summary', 'summary') . '
-        <button class="primary-action form-submit" type="submit">Add Report</button>
-    </form>';
+    $form = form_html('/service-reports', [
+        select_rows_html('Equipment', 'instrument_id', $instruments, 'Select equipment', null, true),
+        input_html('Date', 'date', false, 'date'),
+        input_html('Technician', 'technician'),
+        textarea_html('Summary', 'summary'),
+    ], 'Add Report');
 
-    render_app('Service Reports', 'service-reports', '<section class="content-section"><div class="section-header"><div><p class="eyebrow">Reports</p><h1>Service Reports</h1></div></div>' . flash_html() . $form . table_html(['Equipment', 'Date', 'Technician', 'Summary', 'Actions'], $tableRows) . '</section>');
+    render_app('Service Reports', 'service-reports', page_section('Reports', 'Service Reports', $form . table_html(['Equipment', 'Date', 'Technician', 'Summary', 'Actions'], $tableRows)));
 }
 
 function action_create_service_report(): never
@@ -511,10 +492,7 @@ function page_service_requests(): never
          LEFT JOIN customers c ON c.id = sr.customer_id
          ORDER BY sr.created_date DESC NULLS LAST, sr.id DESC'
     );
-    $tableRows = [];
-
-    foreach ($rows as $row) {
-        $tableRows[] = [
+    $tableRows = array_map(static fn (array $row): array => [
             $row['instrument_name'],
             $row['customer_name'],
             $row['description'],
@@ -523,22 +501,19 @@ function page_service_requests(): never
             $row['created_date'],
             $row['resolved_date'],
             raw_cell(delete_form('/service-requests/' . (int) $row['id'] . '/delete')),
-        ];
-    }
+        ], $rows);
 
-    $form = '<form class="form-grid" method="post" action="/service-requests">
-        ' . csrf_field() . '
-        ' . select_rows_html('Equipment', 'instrument_id', $instruments, 'Select equipment') . '
-        ' . select_rows_html('Customer', 'customer_id', $customers, 'Select customer') . '
-        ' . select_html('Status', 'status', ['open' => 'Open', 'in_progress' => 'In Progress', 'resolved' => 'Resolved', 'closed' => 'Closed']) . '
-        ' . input_html('Assigned Technician', 'assigned_technician') . '
-        ' . input_html('Created Date', 'created_date', false, 'date') . '
-        ' . input_html('Resolved Date', 'resolved_date', false, 'date') . '
-        ' . textarea_html('Description', 'description') . '
-        <button class="primary-action form-submit" type="submit">Add Request</button>
-    </form>';
+    $form = form_html('/service-requests', [
+        select_rows_html('Equipment', 'instrument_id', $instruments, 'Select equipment'),
+        select_rows_html('Customer', 'customer_id', $customers, 'Select customer'),
+        select_html('Status', 'status', ['open' => 'Open', 'in_progress' => 'In Progress', 'resolved' => 'Resolved', 'closed' => 'Closed']),
+        input_html('Assigned Technician', 'assigned_technician'),
+        input_html('Created Date', 'created_date', false, 'date'),
+        input_html('Resolved Date', 'resolved_date', false, 'date'),
+        textarea_html('Description', 'description'),
+    ], 'Add Request');
 
-    render_app('Service Requests', 'service-requests', '<section class="content-section"><div class="section-header"><div><p class="eyebrow">Requests</p><h1>Service Requests</h1></div></div>' . flash_html() . $form . table_html(['Equipment', 'Customer', 'Description', 'Status', 'Technician', 'Created', 'Resolved', 'Actions'], $tableRows) . '</section>');
+    render_app('Service Requests', 'service-requests', page_section('Requests', 'Service Requests', $form . table_html(['Equipment', 'Customer', 'Description', 'Status', 'Technician', 'Created', 'Resolved', 'Actions'], $tableRows)));
 }
 
 function action_create_service_request(): never
@@ -563,14 +538,12 @@ function page_documents(): never
          LEFT JOIN instruments i ON i.id = d.instrument_id
          ORDER BY d.upload_date DESC NULLS LAST, d.id DESC'
     );
-    $tableRows = [];
-
-    foreach ($rows as $row) {
+    $tableRows = array_map(static function (array $row): array {
         $id = (int) $row['id'];
         $download = $row['file_path']
             ? '<a class="icon-action" href="/documents/' . $id . '/download">Download</a>'
             : '';
-        $tableRows[] = [
+        return [
             $row['title'],
             $row['category'],
             $row['instrument_name'],
@@ -579,20 +552,18 @@ function page_documents(): never
             $row['description'],
             raw_cell(row_actions([$download, delete_form('/documents/' . $id . '/delete')])),
         ];
-    }
+    }, $rows);
 
-    $form = '<form class="form-grid" method="post" action="/documents" enctype="multipart/form-data">
-        ' . csrf_field() . '
-        ' . input_html('Title', 'title', true) . '
-        ' . input_html('Category', 'category') . '
-        ' . select_rows_html('Equipment', 'instrument_id', $instruments, 'Unassigned') . '
-        ' . input_html('Upload Date', 'upload_date', false, 'date', date('Y-m-d')) . '
-        ' . textarea_html('Description', 'description') . '
-        <label class="field compact-field"><span>File</span><input name="file" type="file"></label>
-        <button class="primary-action form-submit" type="submit">Add Document</button>
-    </form>';
+    $form = form_html('/documents', [
+        input_html('Title', 'title', true),
+        input_html('Category', 'category'),
+        select_rows_html('Equipment', 'instrument_id', $instruments, 'Unassigned'),
+        input_html('Upload Date', 'upload_date', false, 'date', date('Y-m-d')),
+        textarea_html('Description', 'description'),
+        '<label class="field compact-field"><span>File</span><input name="file" type="file"></label>',
+    ], 'Add Document', ['enctype' => 'multipart/form-data']);
 
-    render_app('Documents', 'documents', '<section class="content-section"><div class="section-header"><div><p class="eyebrow">Files</p><h1>Documents</h1></div></div>' . flash_html() . $form . table_html(['Title', 'Category', 'Equipment', 'Uploaded By', 'Date', 'Description', 'Actions'], $tableRows) . '</section>');
+    render_app('Documents', 'documents', page_section('Files', 'Documents', $form . table_html(['Title', 'Category', 'Equipment', 'Uploaded By', 'Date', 'Description', 'Actions'], $tableRows)));
 }
 
 function action_create_document(): never
@@ -628,15 +599,12 @@ function action_create_document(): never
 function page_reports(): never
 {
     require_user();
-    $body = '<section class="content-section">
-        <div class="section-header"><div><p class="eyebrow">Exports</p><h1>Reports</h1></div></div>
-        <div class="export-grid">
+    $body = page_section('Exports', 'Reports', '<div class="export-grid">
             <section class="panel"><h2>Equipment CSV</h2><p>Inventory with customer IDs and equipment status.</p><a class="primary-action" href="/reports/equipment.csv">Download CSV</a></section>
             <section class="panel"><h2>Maintenance CSV</h2><p>Maintenance history and next due dates.</p><a class="primary-action" href="/reports/maintenance.csv">Download CSV</a></section>
             <section class="panel"><h2>Service Reports CSV</h2><p>Service summaries and technician names.</p><a class="primary-action" href="/reports/service-reports.csv">Download CSV</a></section>
             <section class="panel"><h2>Service Report PDFs</h2><p>Open any service report row and use its PDF button.</p><a class="ghost-action" href="/service-reports">Open Service Reports</a></section>
-        </div>
-    </section>';
+        </div>', '', false);
 
     render_app('Reports', 'reports', $body);
 }
@@ -654,16 +622,14 @@ function page_activity(): never
         $row['timestamp'],
     ], $rows);
 
-    render_app('Activity', 'activity', '<section class="content-section"><div class="section-header"><div><p class="eyebrow">Audit</p><h1>Activity</h1></div></div>' . table_html(['User', 'Action', 'Entity', 'Entity ID', 'Details', 'Time'], $tableRows) . '</section>');
+    render_app('Activity', 'activity', page_section('Audit', 'Activity', table_html(['User', 'Action', 'Entity', 'Entity ID', 'Details', 'Time'], $tableRows), '', false));
 }
 
 function page_profile(): never
 {
     $user = require_user();
     $initials = strtoupper(substr((string) $user['username'], 0, 2));
-    $body = '<section class="content-section">
-        <div class="section-header"><div><p class="eyebrow">Account</p><h1>Profile</h1></div></div>
-        <section class="panel account-hero">
+    $body = page_section('Account', 'Profile', '<section class="panel account-hero">
             <span class="account-avatar">' . h($initials) . '</span>
             <div><h2>' . h($user['username']) . '</h2><p>' . h($user['email']) . '</p></div>
         </section>
@@ -674,8 +640,7 @@ function page_profile(): never
                 <p><span>Role</span><strong>' . h($user['role']) . '</strong></p>
                 <p><span>Email</span><strong>' . h($user['email']) . '</strong></p>
             </section>
-        </div>
-    </section>';
+        </div>', '', false);
 
     render_app('Profile', 'settings', $body);
 }
@@ -683,9 +648,7 @@ function page_profile(): never
 function page_settings(): never
 {
     require_user();
-    $body = '<section class="content-section">
-        <div class="section-header"><div><p class="eyebrow">System</p><h1>Settings</h1></div></div>
-        <div class="settings-grid">
+    $body = page_section('System', 'Settings', '<div class="settings-grid">
             <section class="panel settings-list">
                 <h2>Application</h2>
                 <p><span>App URL</span><strong>' . h(env_string('APP_URL', 'http://127.0.0.1:8080')) . '</strong></p>
@@ -698,8 +661,7 @@ function page_settings(): never
                 <p><span>Port</span><strong>' . h(env_string('DB_PORT', '5432')) . '</strong></p>
                 <p><span>Name</span><strong>' . h(env_string('DB_NAME', 'sciencespark_lab_db')) . '</strong></p>
             </section>
-        </div>
-    </section>';
+        </div>', '', false);
 
     render_app('Settings', 'settings', $body);
 }
@@ -757,27 +719,15 @@ function simple_resource_page(string $title, string $active, string $eyebrow, st
 {
     require_user();
     $rows = db_rows('SELECT * FROM ' . safe_identifier($table) . ' ORDER BY id DESC');
-    $form = '<form class="form-grid" method="post" action="' . h($action) . '">' . csrf_field();
-
-    foreach ($fields as $field) {
-        $form .= input_html($field[0], $field[1], $field[2], $field[3] ?? 'text');
-    }
-
-    $form .= '<button class="primary-action form-submit" type="submit">Add ' . h(rtrim($title, 's')) . '</button></form>';
-    $tableRows = [];
-
-    foreach ($rows as $row) {
-        $tableRow = [];
-
-        foreach ($columns as $column) {
-            $tableRow[] = $row[$column] ?? '';
-        }
-
+    $formFields = array_map(static fn (array $field): string => input_html($field[0], $field[1], $field[2], $field[3] ?? 'text'), $fields);
+    $form = form_html($action, $formFields, 'Add ' . rtrim($title, 's'));
+    $tableRows = array_map(static function (array $row) use ($action, $columns): array {
+        $tableRow = array_map(static fn (string $column): mixed => $row[$column] ?? '', array_values($columns));
         $tableRow[] = raw_cell(delete_form($action . '/' . (int) $row['id'] . '/delete'));
-        $tableRows[] = $tableRow;
-    }
+        return $tableRow;
+    }, $rows);
 
-    render_app($title, $active, '<section class="content-section"><div class="section-header"><div><p class="eyebrow">' . h($eyebrow) . '</p><h1>' . h($title) . '</h1></div></div>' . flash_html() . $form . table_html([...array_keys($columns), 'Actions'], $tableRows) . '</section>');
+    render_app($title, $active, page_section($eyebrow, $title, $form . table_html([...array_keys($columns), 'Actions'], $tableRows)));
 }
 
 function create_simple_row(string $table, array $columns, string $redirect, string $message, array $required = [], array $intColumns = []): never

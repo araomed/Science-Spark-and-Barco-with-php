@@ -455,6 +455,22 @@ function table_html(array $headers, array $rows): string
     return $html . '</tbody></table></div>';
 }
 
+function page_section(string $eyebrow, string $title, string $content, string $right = '', bool $showFlash = true): string
+{
+    return '<section class="content-section"><div class="section-header"><div><p class="eyebrow">' . h($eyebrow) . '</p><h1>' . h($title) . '</h1></div>' . $right . '</div>' . ($showFlash ? flash_html() : '') . $content . '</section>';
+}
+
+function form_html(string $action, array $fields, string $submit, array $attrs = []): string
+{
+    $extra = '';
+
+    foreach ($attrs as $name => $value) {
+        $extra .= ' ' . h($name) . '="' . h($value) . '"';
+    }
+
+    return '<form class="form-grid" method="post" action="' . h($action) . '"' . $extra . '>' . csrf_field() . implode('', $fields) . '<button class="primary-action form-submit" type="submit">' . h($submit) . '</button></form>';
+}
+
 function input_html(string $label, string $name, bool $required = false, string $type = 'text', mixed $value = ''): string
 {
     return '<label class="field compact-field"><span>' . h($label) . '</span><input name="' . h($name) . '" type="' . h($type) . '" value="' . h($value) . '"' . ($required ? ' required' : '') . '></label>';
@@ -492,6 +508,11 @@ function select_rows_html(string $label, string $name, array $rows, string $empt
 function delete_form(string $action): string
 {
     return '<form method="post" action="' . h($action) . '">' . csrf_field() . '<button class="danger-action" type="submit">Delete</button></form>';
+}
+
+function post_button_form(string $action, string $label, string $class = 'ghost-action'): string
+{
+    return '<form method="post" action="' . h($action) . '">' . csrf_field() . '<button class="' . h($class) . '" type="submit">' . h($label) . '</button></form>';
 }
 
 function detail_html(string $label, mixed $value): string
