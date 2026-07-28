@@ -1,24 +1,24 @@
 :root {
-  --ink: #fbf8ff;
-  --muted: #c9bfdc;
-  --soft: #0b0612;
-  --surface: #161021;
-  --surface-strong: #21142f;
-  --line: #3f2858;
-  --line-strong: #7c3aed;
-  --nav: #07030d;
-  --nav-active: #27123a;
-  --teal: #a855f7;
-  --teal-dark: #c084fc;
-  --blue: #8b5cf6;
-  --amber: #f0abfc;
+  --ink: #f5f7f6;
+  --muted: #aebbb6;
+  --soft: #101413;
+  --surface: #18201e;
+  --surface-strong: #202a27;
+  --line: #33433f;
+  --line-strong: #2dd4bf;
+  --nav: #0c100f;
+  --nav-active: #14221f;
+  --teal: #0f9f8e;
+  --teal-dark: #38d6bf;
+  --blue: #60a5fa;
+  --amber: #f8c14f;
   --rose: #fb7185;
-  --mint-soft: #25143a;
-  --blue-soft: #201336;
-  --amber-soft: #32183d;
-  --rose-soft: #351424;
+  --mint-soft: #12302a;
+  --blue-soft: #162538;
+  --amber-soft: #332919;
+  --rose-soft: #351924;
   --shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
-  --outline-glow: rgba(168, 85, 247, 0.52);
+  --outline-glow: rgba(45, 212, 191, 0.34);
   color: var(--ink);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.45;
@@ -41,7 +41,8 @@ a {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -83,8 +84,8 @@ h2 {
 .login-page,
 .public-scan-page {
   background:
-    radial-gradient(circle at top left, rgba(168, 85, 247, 0.28), transparent 34%),
-    linear-gradient(135deg, #050209, #160b22 52%, #050209),
+    radial-gradient(circle at top left, rgba(45, 212, 191, 0.2), transparent 34%),
+    linear-gradient(135deg, #08100e, #14201d 52%, #0a0e0d),
     var(--soft);
   min-height: 100vh;
   padding: 24px;
@@ -156,8 +157,8 @@ h2 {
 
 .brand-mark {
   align-items: center;
-  background: #28113f;
-  border: 1px solid #8b5cf6;
+  background: #12302a;
+  border: 1px solid #2dd4bf;
   border-radius: 8px;
   color: #fff;
   display: inline-flex;
@@ -198,7 +199,7 @@ h2 {
 
 .nav-item span {
   align-items: center;
-  background: rgba(168, 85, 247, 0.16);
+  background: rgba(45, 212, 191, 0.14);
   border-radius: 6px;
   color: #fff;
   display: inline-flex;
@@ -220,8 +221,8 @@ h2 {
 
 .workspace {
   background:
-    radial-gradient(circle at top right, rgba(168, 85, 247, 0.18), transparent 32%),
-    linear-gradient(180deg, #10091a 0%, var(--soft) 42%);
+    radial-gradient(circle at top right, rgba(45, 212, 191, 0.14), transparent 32%),
+    linear-gradient(180deg, #111a18 0%, var(--soft) 42%);
   min-width: 0;
   padding: 24px;
 }
@@ -277,7 +278,7 @@ h2 {
 .profile-top-button,
 .ghost-action,
 .icon-action {
-  background: #10091a;
+  background: #111a18;
   color: var(--ink);
 }
 
@@ -285,7 +286,7 @@ h2 {
 .profile-top-button:hover,
 .ghost-action:hover,
 .icon-action:hover {
-  border-color: #e9d5ff;
+  border-color: #b6fff2;
   box-shadow: 0 0 0 1px var(--outline-glow);
   color: #fff;
   transform: scale(1.04);
@@ -313,8 +314,8 @@ h2 {
 .account-mini-avatar,
 .account-avatar {
   align-items: center;
-  background: linear-gradient(135deg, #a855f7, #4c1d95);
-  border: 1px solid #c084fc;
+  background: linear-gradient(135deg, #0f9f8e, #1d4f60);
+  border: 1px solid #8bdecf;
   border-radius: 6px;
   color: #fff;
   display: inline-flex;
@@ -358,7 +359,7 @@ h2 {
 
 .primary-action:hover {
   background: var(--teal-dark);
-  border-color: #e9d5ff;
+  border-color: #b6fff2;
   transform: translateY(-1px);
 }
 
@@ -539,7 +540,7 @@ h2 {
 }
 
 .bar-track {
-  background: #0f0818;
+  background: #0b1110;
   border-radius: 999px;
   height: 8px;
   overflow: hidden;
@@ -564,8 +565,9 @@ h2 {
 }
 
 input,
-select {
-  background: #10091a;
+select,
+textarea {
+  background: #111a18;
   border: 1px solid var(--line-strong);
   border-radius: 6px;
   color: var(--ink);
@@ -575,14 +577,20 @@ select {
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.18);
   outline: none;
 }
 
+textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
 option {
-  background: #10091a;
+  background: #111a18;
   color: var(--ink);
 }
 
@@ -781,7 +789,7 @@ tbody tr:hover {
 
 .qr-backdrop {
   align-items: center;
-  background: rgba(7, 3, 13, 0.76);
+  background: rgba(8, 14, 13, 0.76);
   display: flex;
   inset: 0;
   justify-content: center;
@@ -858,8 +866,8 @@ tbody tr:hover {
 
 .public-scan-page {
   background:
-    radial-gradient(circle at top right, rgba(168, 85, 247, 0.18), transparent 32%),
-    linear-gradient(180deg, #10091a 0%, var(--soft) 42%);
+    radial-gradient(circle at top right, rgba(45, 212, 191, 0.14), transparent 32%),
+    linear-gradient(180deg, #111a18 0%, var(--soft) 42%);
 }
 
 .public-scan-hero {

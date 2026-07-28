@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$directories = ['public', 'routes', 'src', 'tests', 'tools'];
+$directories = ['includes', 'public', 'tests', 'tools'];
 $failed = false;
 
 foreach ($directories as $directory) {

@@ -2,15 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Auth\JwtService;
-use App\Exceptions\HttpException;
-use App\Exceptions\ValidationException;
-use App\Http\Request;
-use App\Http\Response;
-use App\Http\Router;
-use App\Validation\Validator;
-
-require dirname(__DIR__) . '/vendor/autoload.php';
+require dirname(__DIR__) . '/includes/app.php';
 
 $tests = [];
 
@@ -24,73 +16,38 @@ $assert = static function (bool $condition, string $message): void {
     }
 };
 
-$test('request rejects malformed json', static function () use ($assert): void {
+$test('html escaping protects output', static function () use ($assert): void {
+    $assert(h('<script>alert(1)</script>') === '&lt;script&gt;alert(1)&lt;/script&gt;', 'HTML should be escaped.');
+});
+
+$test('empty values display consistently', static function () use ($assert): void {
+    $assert(display(null) === 'Not set', 'Null values should use the shared placeholder.');
+    $assert(display('') === 'Not set', 'Empty strings should use the shared placeholder.');
+    $assert(display('active') === 'active', 'Real values should display unchanged.');
+});
+
+$test('database identifiers are restricted', static function () use ($assert): void {
+    $assert(safe_identifier('maintenance_records') === 'maintenance_records', 'Valid identifier should pass.');
+
     try {
-        Request::parseJsonBody('{"missing":');
-    } catch (HttpException $exception) {
-        $assert($exception->statusCode() === 400, 'Malformed JSON should be a 400.');
+        safe_identifier('users; DROP TABLE users');
+    } catch (InvalidArgumentException) {
         return;
     }
 
-    throw new RuntimeException('Malformed JSON did not throw.');
+    throw new RuntimeException('Unsafe identifier was accepted.');
 });
 
-$test('validator returns field errors', static function () use ($assert): void {
-    try {
-        Validator::validate(['email' => 'not-an-email'], [
-            'email' => 'required|email',
-        ]);
-    } catch (ValidationException $exception) {
-        $assert(isset($exception->errors()['email']), 'Email error was expected.');
-        return;
-    }
+$test('scan url uses configured app url', static function () use ($assert): void {
+    $_ENV['APP_URL'] = 'http://example.test/';
+    putenv('APP_URL=http://example.test/');
 
-    throw new RuntimeException('Invalid email did not throw.');
+    $assert(scan_url(7) === 'http://example.test/scan/equipment/7', 'Scan URL should point to public equipment profile.');
 });
 
-$test('router matches route parameters', static function () use ($assert): void {
-    $router = new Router();
-    $router->get('/api/items/{id}', static function (Request $request): void {
-        Response::success(['id' => $request->route('id')]);
-    });
-
-    ob_start();
-    $router->dispatch(Request::create('GET', '/api/items/42'));
-    $payload = json_decode((string) ob_get_clean(), true);
-
-    $assert($payload['success'] === true, 'Route should succeed.');
-    $assert($payload['data']['id'] === '42', 'Route parameter should be captured.');
-});
-
-$test('router distinguishes 405 from 404', static function () use ($assert): void {
-    $router = new Router();
-    $router->get('/api/items', static function (): void {
-        Response::success();
-    });
-
-    ob_start();
-    $router->dispatch(Request::create('POST', '/api/items'));
-    $payload = json_decode((string) ob_get_clean(), true);
-
-    $assert($payload['success'] === false, '405 should be an error response.');
-    $assert($payload['message'] === 'Method not allowed', 'Expected 405 message.');
-});
-
-$test('jwt service creates and decodes tokens', static function () use ($assert): void {
-    $_ENV['JWT_SECRET'] = 'test-secret-for-local-automated-tests-only-32chars';
-    $_ENV['APP_URL'] = 'http://127.0.0.1:8080';
-    $_ENV['JWT_EXPIRATION_MINUTES'] = '5';
-
-    $service = new JwtService();
-    $token = $service->createToken([
-        'id' => 7,
-        'username' => 'tester',
-        'email' => 'tester@example.com',
-        'role' => 'admin',
-    ]);
-    $payload = $service->decode($token['access_token']);
-
-    $assert((string) $payload['sub'] === '7', 'JWT subject should be the user ID.');
+$test('csrf field contains current token', static function () use ($assert): void {
+    $token = csrf_token();
+    $assert(str_contains(csrf_field(), $token), 'CSRF field should include the session token.');
 });
 
 $passed = 0;

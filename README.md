@@ -1,28 +1,24 @@
 # Science Spark Laboratory Management System
 
-Native PHP 8.5 and HTML5 laboratory equipment management system for the Science Spark database.
+Native PHP and HTML laboratory equipment management system for the existing Science Spark PostgreSQL database.
 
-This project does not use Laravel, React, Vite, Python, or FastAPI. PHP renders the web pages directly and also keeps JSON API endpoints available under `/api`.
+The app does not use Laravel, Symfony, React, Vite, MVC controllers, repositories, middleware, or JWT. PHP renders the pages directly, forms post back to PHP, and PDO writes to PostgreSQL with prepared statements. Composer libraries are used only for QR codes and PDF generation.
 
-## Architecture
+## Structure
 
 ```text
-Browser -> public/index.php -> Router -> Controller -> PDO -> PostgreSQL
+Browser -> public/index.php -> includes/app.php -> PDO -> PostgreSQL
 ```
 
-Main folders:
-
-- `public/` contains the web entry point and CSS assets.
-- `routes/` defines PHP web routes and API routes.
-- `src/Controllers/` contains page and API controllers.
-- `src/Database/` contains the PDO database connection.
-- `src/Auth/` contains JWT support for API clients.
-- `storage/` contains logs and uploaded files.
-- `docs/` contains project documentation.
+- `public/index.php` contains the page routes and form actions.
+- `includes/app.php` contains simple shared PHP functions for database access, sessions, rendering, uploads, QR, and PDF.
+- `public/assets/app.css` contains the UI styling.
+- `storage/uploads` stores uploaded document files.
+- `docs` contains reference notes.
 
 ## Requirements
 
-- PHP 8.5 with `pdo_pgsql`, `fileinfo`, `openssl`, and `json`
+- PHP 8.2 or newer with `pdo_pgsql`, `fileinfo`, `openssl`, and `json`
 - Composer
 - PostgreSQL database `sciencespark_lab_db`
 
@@ -34,13 +30,12 @@ Main folders:
    composer install
    ```
 
-2. Create `.env` from `.env.example` and set local values:
+2. Create `.env` from `.env.example` and set local database values:
 
    ```env
    DB_NAME=sciencespark_lab_db
    DB_USER=postgres
    DB_PASSWORD=your-local-password
-   JWT_SECRET=generate-a-long-random-secret
    ```
 
 3. Start the PHP app:
@@ -55,16 +50,10 @@ Main folders:
    http://127.0.0.1:8080
    ```
 
-For phone testing on the same Wi-Fi, set `APP_URL` in `.env` to the laptop IP, for example:
+For phone QR testing on the same Wi-Fi, set `APP_URL` in `.env` to the laptop IP, for example:
 
 ```env
 APP_URL=http://192.168.1.206:8080
-```
-
-Then start PHP on all network interfaces:
-
-```bash
-php -S 0.0.0.0:8080 -t public public/index.php
 ```
 
 ## Features
@@ -73,38 +62,25 @@ php -S 0.0.0.0:8080 -t public public/index.php
 - Dashboard metrics
 - Equipment management
 - Customer management
-- Maintenance records
-- Maintenance alerts
+- Maintenance records and alerts
 - Notifications
-- Service reports
+- Service reports with PDF downloads
 - Service requests
-- Documents
+- Document uploads and downloads
 - CSV exports
 - Activity log view
 - Profile and settings pages
-- Automatic equipment QR codes
+- Equipment QR codes
 - Public read-only QR scan profile pages
-- JSON API endpoints under `/api`
 
 ## Commands
 
 - `composer lint` checks PHP syntax.
-- `composer test` runs focused unit tests.
+- `composer test` runs lightweight helper tests.
 - `php -S 127.0.0.1:8080 -t public public/index.php` starts the local app.
 
-## QR Codes
+## QR And PDF
 
-Equipment QR targets are assigned automatically when equipment is created. QR codes open:
+QR codes are generated with `chillerlan/php-qrcode`.
 
-```text
-/scan/equipment/{id}
-```
-
-That page is rendered by PHP and does not require the React/Vite frontend or a phone login session.
-
-## Documentation
-
-- [docs/api.md](docs/api.md)
-- [docs/database.md](docs/database.md)
-- [docs/architecture.md](docs/architecture.md)
-- [docs/development.md](docs/development.md)
+Service report PDFs are generated with `setasign/fpdf`.
